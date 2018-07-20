@@ -1,0 +1,23 @@
+{
+  "name": "bcjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "tape test/*.test.js | tap-spec"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bitcoinjs-lib": "^3.3.2",
+    "node-fetch": "^2.1.2",
+    "waterpark": "^0.1.1"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.9.1"
+  }
+}
