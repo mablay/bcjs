@@ -43,3 +43,6 @@ TODO: Provide the link to a simple bitcoind docker setup.
 * [ ] Implement streaming tests
 * [ ] Concurrent RPCs using transform streams
 * [ ] Beautify documentation
+* [ ] Composable pattern for BCC client
+* [ ] Concurrent queue for RPC client
+* [ ] Separate JSON-RPC from BCC functionality
