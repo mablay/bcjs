@@ -16,7 +16,7 @@ test('streaming blocks', async t => {
   t.plan(11)
   bcc.blockStream(100001, 100010)
     .on('data', block => t.ok(block.hash, block.hash))
-    .on('finish', () => t.ok(true, 'finish'))
+    .on('end', () => t.ok(true, 'end'))
 })
 
 test('streaming scripts', async t => {

@@ -12,28 +12,30 @@ function rpc ({username, password, ...options} = {}) {
     headers.Authorization = auth
   }
 
-  return {
-    exec (method, params = []) {
-      const body = {
-        jsonrpc: '1.0',
-        id: '' + id++,
-        method,
-        params
-      }
-      // console.log('[rpc] body', body)
-      return fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(body)
-      }).then(res => res.json())
-        .then(json => {
-          if (json.error) {
-            console.log(json)
-            throw new Error(`${json.error.message} (${json.error.code})`)
-          }
-          return json.result
-        })
+  function exec (method, params = []) {
+    const body = {
+      jsonrpc: '1.0',
+      id: '' + id++,
+      method,
+      params
     }
+    // console.log('[rpc] body', body)
+    return fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body)
+    }).then(res => res.json())
+      .then(json => {
+        if (json.error) {
+          console.log(json)
+          throw new Error(`${json.error.message} (${json.error.code})`)
+        }
+        return json.result
+      })
+  }
+
+  return {
+    exec
   }
 }
 

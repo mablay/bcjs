@@ -1,5 +1,4 @@
-const {range, throughPromise, through} = require('waterpark')
-const parallel = require('parallel-transform')
+const {range, through, concurrent} = require('waterpark')
 const Rpc = require('./rpc')
 
 function Bcc (options) {
@@ -22,10 +21,10 @@ function Bcc (options) {
    */
 
   const blockHashStream = (from, to) => range(from, to)
-    .pipe(throughPromise(getBlockHash))
+    .pipe(through.promise(getBlockHash))
 
   const blockStream = (from, to) => blockHashStream(from, to)
-    .pipe(parallel(7, function (hash, cb) {
+    .pipe(concurrent(7, function (hash, encoding, cb) {
       getBlock(hash)
         .then(block => cb(null, block))
         .catch(err => cb(err))
@@ -33,7 +32,7 @@ function Bcc (options) {
     // .pipe(throughPromise(getBlock))
 
   const blockHeaderStream = (from, to) => blockHashStream(from, to)
-    .pipe(throughPromise(getBlockHeader))
+    .pipe(through.promise(getBlockHeader))
 
   const transactionHashStream = (from, to) => blockHeaderStream(from, to)
     .pipe(through(function (blockHeader, encoding, next) {
