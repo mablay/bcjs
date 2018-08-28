@@ -17,8 +17,8 @@ TODO: Provide the link to a simple bitcoind docker setup.
 
     const bcjs = require('bcjs')({
       url: 'http://YOUR_BTC_HOST:8332',
-      username: 'YOUR_USERNAME',
-      password: 'YOUR_PASSWORD'
+      username: 'YOUR_USERNAME', // (optional)
+      password: 'YOUR_PASSWORD'  // (optional)
     })
 
     async function main () {

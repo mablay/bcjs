@@ -1,6 +1,7 @@
 const fetch = require('node-fetch')
 
 function rpc ({username, password, ...options} = {}) {
+  let read = 0
   let id = 1
   const url = options.url
   const headers = {
@@ -24,18 +25,27 @@ function rpc ({username, password, ...options} = {}) {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(body)
-    }).then(res => res.json())
+    })
+      .then(res => {
+        if (res.statusCode >= 400) {
+          throw new Error('HTTP-' + res.statusCode + ' ' + Object.keys(res))
+        }
+        read += parseInt(res.headers.get('Content-Length'))
+        return res.json()
+      })
       .then(json => {
         if (json.error) {
-          console.log(json)
+          // console.log(json)
           throw new Error(`${json.error.message} (${json.error.code})`)
         }
+        // console.log('[rpc] ', json)
         return json.result
       })
   }
 
   return {
-    exec
+    exec,
+    stats: () => read
   }
 }
 

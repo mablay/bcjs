@@ -1,4 +1,5 @@
-const {range, through, concurrent} = require('waterpark')
+const {range, through} = require('waterpark')
+const concurrent = require('parallel-transform')
 const Rpc = require('./rpc')
 
 function Bcc (options) {
@@ -14,7 +15,11 @@ function Bcc (options) {
 
   const getBlock = (hash) => rpc.exec('getblock', [hash, 2])
 
+  const getRawBlock = (hash) => rpc.exec('getblock', [hash, 0])
+
   const getBlockHeader = (hash) => rpc.exec('getblock', [hash, 1])
+
+  const getTransaction = (txid) => rpc.exec('getrawtransaction', [txid, 1])
 
   /*
    * STREAMS
@@ -24,15 +29,26 @@ function Bcc (options) {
     .pipe(through.promise(getBlockHash))
 
   const blockStream = (from, to) => blockHashStream(from, to)
-    .pipe(concurrent(7, function (hash, encoding, cb) {
+    .pipe(concurrent(7, function (hash, cb) {
       getBlock(hash)
         .then(block => cb(null, block))
         .catch(err => cb(err))
     }))
-    // .pipe(throughPromise(getBlock))
+  // .pipe(throughPromise(getBlock))
+
+  const blockRawStream = (from, to) => blockHashStream(from, to)
+    .pipe(concurrent(3, function (hash, cb) {
+      getRawBlock(hash)
+        .then(block => cb(null, block))
+        .catch(err => cb(err))
+    }))
 
   const blockHeaderStream = (from, to) => blockHashStream(from, to)
-    .pipe(through.promise(getBlockHeader))
+    .pipe(concurrent(7, function (hash, cb) {
+      getBlockHeader(hash)
+        .then(head => cb(null, head))
+        .catch(err => cb(err))
+    }))
 
   const transactionHashStream = (from, to) => blockHeaderStream(from, to)
     .pipe(through(function (blockHeader, encoding, next) {
@@ -45,17 +61,17 @@ function Bcc (options) {
 
   const transactionStream = (from, to) => blockStream(from, to)
     .pipe(through(function (block, encoding, next) {
-      block.tx.forEach(t => this.push({
+      block.tx.forEach((t, index) => this.push({
         block: blockMeta(block),
-        tx: t
+        tx: {index, ...t}
       }))
       next()
     }))
 
   const ioStream = (from, to) => transactionStream(from, to)
     .pipe(through(function ({block, tx}, encoding, next) {
-      tx.vin.forEach(i => this.push(ioData(block, tx, 'in', i)))
-      tx.vout.forEach(o => this.push(ioData(block, tx, 'out', o)))
+      tx.vin.forEach((input, idx) => this.push(ioData(block, tx, 'in', input, idx)))
+      tx.vout.forEach((output, idx) => this.push(ioData(block, tx, 'out', output, idx)))
       next()
     }))
 
@@ -75,12 +91,15 @@ function Bcc (options) {
     getBlockHash,
     getBlock,
     getBlockHeader,
+    getTransaction,
     blockStream,
+    blockRawStream,
     blockHeaderStream,
     transactionHashStream,
     transactionStream,
     ioStream,
-    scriptStream
+    scriptStream,
+    stats: () => rpc.stats()
   }
 }
 
@@ -88,15 +107,15 @@ function blockMeta ({hash, time, height}) {
   return {hash, time, height}
 }
 
-function txMeta ({txid}) {
-  return {txid}
+function txMeta ({txid, index}) {
+  return {txid, index}
 }
 
-function ioData (block, tx, type, io) {
+function ioData (block, tx, type, io, index) {
   return {
     block,
     tx: txMeta(tx),
-    io: {type, ...io}
+    io: {type, index, ...io}
   }
 }
 
